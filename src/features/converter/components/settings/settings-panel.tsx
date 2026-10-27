@@ -1,4 +1,4 @@
-import { RotateCcwIcon } from "lucide-react";
+import { ChevronDownIcon, RotateCcwIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   FieldDescription,
   FieldGroup,
@@ -56,6 +57,34 @@ export const SettingsPanel = ({ settings, onChange }: SettingsPanelProps) => {
       onChange((previous) => ({ ...previous, [key]: value }));
     };
   const isDefault = settingsKey(settings) === settingsKey(DEFAULT_SETTINGS);
+  const publisher = settings.layout === "publisher";
+
+  const typeface = (
+    <SegmentedSetting
+      label="Typeface"
+      value={settings.fontFamily}
+      options={FONT_OPTIONS}
+      description={FONT_FAMILIES[settings.fontFamily].description}
+      onChange={set("fontFamily")}
+    />
+  );
+  const lineSpacing = (
+    <SliderSetting
+      label="Line spacing"
+      value={settings.lineHeight}
+      range={LINE_HEIGHT_RANGE}
+      format={(ratio) => `${ratio.toFixed(2)}×`}
+      onChange={set("lineHeight")}
+    />
+  );
+  const alignment = (
+    <SegmentedSetting
+      label="Alignment"
+      value={settings.textAlign}
+      options={ALIGN_OPTIONS}
+      onChange={set("textAlign")}
+    />
+  );
 
   return (
     <Card>
@@ -112,39 +141,57 @@ export const SettingsPanel = ({ settings, onChange }: SettingsPanelProps) => {
           <FieldSet>
             <FieldLegend>Typography</FieldLegend>
             <FieldDescription>
-              {settings.layout === "publisher"
-                ? "Defaults for text the book doesn't style itself."
+              {publisher
+                ? "Fonts, sizes and spacing come from the book."
                 : "Applied to all text, replacing the book's styling."}
             </FieldDescription>
-            <FieldGroup>
-              <SegmentedSetting
-                label="Typeface"
-                value={settings.fontFamily}
-                options={FONT_OPTIONS}
-                description={FONT_FAMILIES[settings.fontFamily].description}
-                onChange={set("fontFamily")}
-              />
-              <SliderSetting
-                label="Text size"
-                value={settings.fontSizePt}
-                range={FONT_SIZE_RANGE}
-                format={(pt) => `${pt} pt`}
-                onChange={set("fontSizePt")}
-              />
-              <SliderSetting
-                label="Line spacing"
-                value={settings.lineHeight}
-                range={LINE_HEIGHT_RANGE}
-                format={(ratio) => `${ratio.toFixed(2)}×`}
-                onChange={set("lineHeight")}
-              />
-              <SegmentedSetting
-                label="Alignment"
-                value={settings.textAlign}
-                options={ALIGN_OPTIONS}
-                onChange={set("textAlign")}
-              />
-            </FieldGroup>
+            {publisher ? (
+              <FieldGroup>
+                <SliderSetting
+                  label="Text scale"
+                  description="Resizes the book's text proportionally."
+                  value={settings.fontSizePt}
+                  range={FONT_SIZE_RANGE}
+                  format={(pt) => `${pt} pt`}
+                  onChange={set("fontSizePt")}
+                />
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="-mx-2 w-[calc(100%+1rem)] justify-between text-muted-foreground [&[data-state=open]>svg]:rotate-180"
+                    >
+                      Fallbacks for unstyled text
+                      <ChevronDownIcon className="transition-transform" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <FieldGroup className="pt-3">
+                      <FieldDescription>
+                        Used only where the book doesn&rsquo;t set these itself.
+                      </FieldDescription>
+                      {typeface}
+                      {lineSpacing}
+                      {alignment}
+                    </FieldGroup>
+                  </CollapsibleContent>
+                </Collapsible>
+              </FieldGroup>
+            ) : (
+              <FieldGroup>
+                {typeface}
+                <SliderSetting
+                  label="Text size"
+                  value={settings.fontSizePt}
+                  range={FONT_SIZE_RANGE}
+                  format={(pt) => `${pt} pt`}
+                  onChange={set("fontSizePt")}
+                />
+                {lineSpacing}
+                {alignment}
+              </FieldGroup>
+            )}
           </FieldSet>
 
           <FieldSeparator />
