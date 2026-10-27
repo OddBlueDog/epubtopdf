@@ -1,5 +1,7 @@
 # EPUB to PDF
 
+**[▶ Open the app: epubtopdf.pages.dev](https://epubtopdf.pages.dev/)**
+
 Convert EPUB e-books to PDF entirely in the browser — no uploads, no server.
 
 - **Publisher layout (default):** keeps the book's own fonts (including obfuscated embedded
