@@ -1,0 +1,19 @@
+# Supply-chain hardening (project-level; overrides machine defaults).
+
+# Only resolve versions that have been public for at least 7 days (minutes).
+minimumReleaseAge: 10080
+# Refuse versions whose publish trust is weaker than earlier releases
+# (e.g. trusted publisher / provenance → plain token).
+trustPolicy: no-downgrade
+# Transitive deps may not come from git URLs or tarballs.
+blockExoticSubdeps: true
+# Install scripts only run for packages explicitly approved below.
+strictDepBuilds: true
+verifyStoreIntegrity: true
+# Peer / engine mismatches are errors, not warnings.
+strictPeerDependencies: true
+engineStrict: true
+# Pin exact versions so the lockfile and manifest agree.
+savePrefix: ""
+patchedDependencies:
+  pdfmake@0.3.12: patches/pdfmake@0.3.12.patch

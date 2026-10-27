@@ -1,0 +1,106 @@
+diff --git a/build/pdfmake.js b/build/pdfmake.js
+index 06888e1a6ec438779956020e882a1c3011238376..a1157ce486b7c26f949e6e631bf8fe62ae23ae7a 100644
+--- a/build/pdfmake.js
++++ b/build/pdfmake.js
+@@ -31044,22 +31044,26 @@ class EmbeddedFont extends PDFFont {
+     }
+     return run;
+   }
+-  layoutCached(text) {
++  layoutCached(text, features) {
+     if (!this.layoutCache) {
+-      return this.layoutRun(text);
++      return this.layoutRun(text, features);
++    }
++    if (features && this._layoutFeatures !== features) {
++      this._layoutFeatures = features;
++      this._layoutFeaturesKey = `${JSON.stringify(features)}\u0000`;
+     }
++    const key = features ? this._layoutFeaturesKey + text : text;
+     let cached;
+-    if (cached = this.layoutCache[text]) {
++    if (cached = this.layoutCache[key]) {
+       return cached;
+     }
+-    const run = this.layoutRun(text);
+-    this.layoutCache[text] = run;
++    const run = this.layoutRun(text, features);
++    this.layoutCache[key] = run;
+     return run;
+   }
+   layout(text, features, onlyWidth) {
+-    if (features) {
+-      return this.layoutRun(text, features);
+-    }
++    // Patched: explicit font features no longer bypass the per-word layout cache
++    // (they are part of the cache key instead), which keeps layout fast.
+     let glyphs = onlyWidth ? null : [];
+     let positions = onlyWidth ? null : [];
+     let advanceWidth = 0;
+@@ -31068,7 +31072,7 @@ class EmbeddedFont extends PDFFont {
+     while (index <= text.length) {
+       var needle;
+       if (index === text.length && last < index || (needle = text.charAt(index), [' ', '\t'].includes(needle))) {
+-        const run = this.layoutCached(text.slice(last, ++index));
++        const run = this.layoutCached(text.slice(last, ++index), features);
+         if (!onlyWidth) {
+           glyphs = glyphs.concat(run.glyphs);
+           positions = positions.concat(run.positions);
+@@ -38346,11 +38350,22 @@ class ElementWriter extends (events_namespaceFn().EventEmitter) {
+       line.x = (line.x || 0) + offset;
+     }
+     if (alignment === 'justify' && !line.newLineForced && !line.lastLineInParagraph && line.inlines.length > 1) {
+-      let additionalSpacing = (width - lineWidth) / (line.inlines.length - 1);
++      // Patched: stretch only at word boundaries (after whitespace), not between adjacent
++      // differently-styled inlines such as an italic word and the comma that follows it.
++      let isGap = i => /\s$/.test(line.inlines[i - 1].text || '');
++      let gaps = 0;
++      for (let i = 1, l = line.inlines.length; i < l; i++) {
++        if (isGap(i)) {
++          gaps++;
++        }
++      }
++      let additionalSpacing = (width - lineWidth) / (gaps || line.inlines.length - 1);
++      let shift = 0;
+       for (let i = 1, l = line.inlines.length; i < l; i++) {
+-        offset = i * additionalSpacing;
+-        line.inlines[i].x += offset;
+-        line.inlines[i].justifyShift = additionalSpacing;
++        let gap = gaps === 0 || isGap(i) ? additionalSpacing : 0;
++        shift += gap;
++        line.inlines[i].x += shift;
++        line.inlines[i].justifyShift = gap;
+       }
+     }
+   }
+diff --git a/js/ElementWriter.js b/js/ElementWriter.js
+index f712c811d4a7010c904df0a4b2ac0f4e890edee3..3ac256d7f472afbb79ab6e7af9d0a1781dd0178e 100644
+--- a/js/ElementWriter.js
++++ b/js/ElementWriter.js
+@@ -65,11 +65,22 @@ class ElementWriter extends _events.EventEmitter {
+       line.x = (line.x || 0) + offset;
+     }
+     if (alignment === 'justify' && !line.newLineForced && !line.lastLineInParagraph && line.inlines.length > 1) {
+-      let additionalSpacing = (width - lineWidth) / (line.inlines.length - 1);
++      // Patched: stretch only at word boundaries (after whitespace), not between adjacent
++      // differently-styled inlines such as an italic word and the comma that follows it.
++      let isGap = i => /\s$/.test(line.inlines[i - 1].text || '');
++      let gaps = 0;
+       for (let i = 1, l = line.inlines.length; i < l; i++) {
+-        offset = i * additionalSpacing;
+-        line.inlines[i].x += offset;
+-        line.inlines[i].justifyShift = additionalSpacing;
++        if (isGap(i)) {
++          gaps++;
++        }
++      }
++      let additionalSpacing = (width - lineWidth) / (gaps || line.inlines.length - 1);
++      let shift = 0;
++      for (let i = 1, l = line.inlines.length; i < l; i++) {
++        let gap = gaps === 0 || isGap(i) ? additionalSpacing : 0;
++        shift += gap;
++        line.inlines[i].x += shift;
++        line.inlines[i].justifyShift = gap;
+       }
+     }
+   }

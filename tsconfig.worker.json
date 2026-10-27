@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.worker.tsbuildinfo",
+    "lib": ["es2024", "webworker"],
+    "types": ["vite/client"]
+  },
+  "include": ["src/worker", "src/core", "src/vite-env.d.ts"],
+  "exclude": ["src/**/*.test.ts", "src/test"]
+}

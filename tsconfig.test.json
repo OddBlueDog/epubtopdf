@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "types": ["vite/client", "node"],
+    "jsx": "react-jsx"
+  },
+  "include": ["src"],
+  "exclude": ["src/worker/convert.worker.ts"]
+}
