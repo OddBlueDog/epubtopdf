@@ -5,6 +5,11 @@ minimumReleaseAge: 10080
 # Refuse versions whose publish trust is weaker than earlier releases
 # (e.g. trusted publisher / provenance → plain token).
 trustPolicy: no-downgrade
+trustPolicyExclude:
+  # Official npm-team security backport (CVE-2022-25883), published in July 2023 without
+  # provenance after the provenance-signed 7.5.x releases — a known false positive.
+  # Reached only via the shadcn CLI's Babel dependency (devDependency).
+  - semver@6.3.1
 # Transitive deps may not come from git URLs or tarballs.
 blockExoticSubdeps: true
 # Install scripts only run for packages explicitly approved below.
