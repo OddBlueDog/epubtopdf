@@ -205,3 +205,15 @@ describe("user-agent stylesheet", () => {
     expect(sizes).toEqual([...sizes].toSorted((a, b) => b - a));
   });
 });
+
+describe("@page rules", () => {
+  it("collects unconditional @page declarations and skips :first/:left variants", () => {
+    const sheet = parseStylesheet(
+      "@page { margin: 5%; } @page :first { margin-top: 0; } @page { margin-bottom: 2em }",
+    );
+    expect(sheet.pageDeclarations).toEqual([
+      { property: "margin", value: "5%", important: false },
+      { property: "margin-bottom", value: "2em", important: false },
+    ]);
+  });
+});

@@ -12,7 +12,12 @@ import { textContent } from "domutils";
 import type { EpubBook } from "@/core/epub/load-epub";
 import { isExternalHref, resolveHref } from "@/core/epub/paths";
 import type { ConversionSettings } from "@/core/settings";
-import { PAGE_SIZES } from "@/core/settings";
+import {
+  CSS_MEDIUM_PT,
+  effectiveBaseFontSize,
+  PAGE_SIZES,
+  usesCustomMargins,
+} from "@/core/settings";
 import type { AnyNode, Element } from "@/core/xml/dom";
 import { attr, byLocalName, findAll, findFirst, localName, parseXhtml } from "@/core/xml/dom";
 
@@ -20,7 +25,10 @@ import { attr, byLocalName, findAll, findFirst, localName, parseXhtml } from "@/
 export type ResourceUrl = (path: string) => string | undefined;
 
 export type PrintOptions = {
-  readonly settings: Pick<ConversionSettings, "pageSize" | "marginMm">;
+  readonly settings: Pick<
+    ConversionSettings,
+    "layout" | "pageSize" | "overrideMargins" | "marginMm" | "overrideTextSize" | "fontSizePt"
+  >;
   readonly resourceUrl: ResourceUrl;
 };
 
@@ -170,10 +178,18 @@ const rewriteReferences = (
   delete element.attribs["srcset"];
 };
 
-const printStylesheet = ({ pageSize, marginMm }: PrintOptions["settings"]): string => {
-  const page = PAGE_SIZES[pageSize];
+/**
+ * Page box and layout glue. Margins and text size are only imposed when the user chose to
+ * override them; otherwise the book's own `@page` rule and sizes apply.
+ */
+const printStylesheet = (settings: PrintOptions["settings"]): string => {
+  const page = PAGE_SIZES[settings.pageSize];
+  const margin = usesCustomMargins(settings) ? ` margin: ${settings.marginMm}mm;` : "";
+  const scale = effectiveBaseFontSize(settings) / CSS_MEDIUM_PT;
   return `
-@page { size: ${page.widthMm}mm ${page.heightMm}mm; margin: ${marginMm}mm; }
+@page { size: ${page.widthMm}mm ${page.heightMm}mm;${margin} }${
+    scale === 1 ? "" : `\nhtml { zoom: ${scale.toFixed(4)}; }`
+  }
 html, body { margin: 0 !important; padding: 0 !important; background: none !important; }
 .${BODY_CLASS} { display: block; }
 .${BODY_CLASS} + .${BODY_CLASS} { break-before: page; }

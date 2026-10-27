@@ -196,6 +196,9 @@ export type BookMetadata = {
   readonly subjects: readonly string[];
 };
 
+/** Raw CSS values of the book's `@page` margins; sides it doesn't set are absent. */
+export type PageMargins = Partial<Record<"top" | "right" | "bottom" | "left", string>>;
+
 /** An `@font-face` the book ships, resolved to an archive path. */
 export type EmbeddedFontFace = {
   readonly family: string;
@@ -207,6 +210,8 @@ export type EmbeddedFontFace = {
 export type BookDocument = {
   readonly metadata: BookMetadata;
   readonly fontFaces: readonly EmbeddedFontFace[];
+  /** Page margins from the book's CSS `@page` rule, if it sets any. */
+  readonly pageMargins: PageMargins | undefined;
   readonly chapters: readonly Chapter[];
   readonly outline: readonly OutlineEntry[];
   /** Archive path of the cover image, when the book declares one. */

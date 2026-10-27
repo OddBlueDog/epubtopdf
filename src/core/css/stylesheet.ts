@@ -30,6 +30,8 @@ export type ParsedStylesheet = {
   readonly fontFaces: readonly FontFace[];
   /** Raw `@import` targets, relative to the stylesheet. */
   readonly imports: readonly string[];
+  /** Declarations of unconditional `@page` rules (no `:first`/`:left` selectors). */
+  readonly pageDeclarations: readonly Declaration[];
 };
 
 const IMPORTANT = /\s*!\s*important\s*$/iu;
@@ -163,6 +165,7 @@ export const parseStylesheet = (css: string): ParsedStylesheet => {
   const rules: StyleRule[] = [];
   const fontFaces: FontFace[] = [];
   const imports: string[] = [];
+  const pageDeclarations: Declaration[] = [];
 
   const visit = (nodes: readonly (CssAtRuleAST | CssDeclarationAST)[]): void => {
     for (const node of nodes) {
@@ -178,6 +181,11 @@ export const parseStylesheet = (css: string): ParsedStylesheet => {
         case CssTypes.supports:
         case CssTypes.layer:
           visit(node.rules ?? []);
+          break;
+        case CssTypes.page:
+          if (node.selectors.every((selector) => selector.trim() === "")) {
+            pageDeclarations.push(...toDeclarations(node.declarations));
+          }
           break;
         case CssTypes.fontFace:
           fontFaces.push(...toFontFace(toDeclarations(node.declarations)));
@@ -200,7 +208,7 @@ export const parseStylesheet = (css: string): ParsedStylesheet => {
   } catch {
     // A stylesheet the parser cannot recover from contributes nothing, like in a browser.
   }
-  return { rules, fontFaces, imports };
+  return { rules, fontFaces, imports, pageDeclarations };
 };
 
 /** Parses a `style="…"` attribute. */

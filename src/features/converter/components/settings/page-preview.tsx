@@ -2,7 +2,7 @@ import { memo } from "react";
 
 import { pageGeometry } from "@/core/pdf/page-geometry";
 import type { ConversionSettings } from "@/core/settings";
-import { PAGE_SIZES } from "@/core/settings";
+import { effectiveBaseFontSize, PAGE_SIZES, usesCustomMargins } from "@/core/settings";
 
 const PARAGRAPH_LINES = [5, 3, 6, 4, 5, 2, 6, 4] as const;
 const MAX_LINES = 80;
@@ -18,7 +18,7 @@ export const PagePreview = memo(({ settings }: { readonly settings: ConversionSe
   const geometry = pageGeometry(settings);
   const [left, top] = geometry.margins;
   const { contentWidth, contentHeight } = geometry;
-  const size = settings.fontSizePt;
+  const size = effectiveBaseFontSize(settings);
   const lineStep = size * settings.lineHeight;
   const barHeight = size * 0.42;
   const headingHeight = size * 1.85 * 0.5;
@@ -95,6 +95,7 @@ export const PagePreview = memo(({ settings }: { readonly settings: ConversionSe
       </svg>
       <figcaption className="text-xs text-muted-foreground">
         {page.label} · {page.description}
+        {usesCustomMargins(settings) ? null : " · book margins"}
       </figcaption>
     </figure>
   );

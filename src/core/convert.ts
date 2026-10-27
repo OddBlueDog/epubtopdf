@@ -11,7 +11,7 @@ import type { FontLoader } from "@/core/pdf/fonts";
 import type { EmbeddedImage } from "@/core/pdf/render-blocks";
 import { renderPdf } from "@/core/pdf/render-pdf";
 import type { ConversionSettings } from "@/core/settings";
-import { IMAGE_QUALITIES } from "@/core/settings";
+import { effectiveBaseFontSize, IMAGE_QUALITIES } from "@/core/settings";
 
 export type ConversionStage = "reading" | "parsing" | "images" | "rendering";
 
@@ -69,7 +69,7 @@ export const convertEpubToPdf = async ({
 
   const book = buildBookDocument(epubBook, {
     includeImages: settings.includeImages,
-    baseFontSize: settings.fontSizePt,
+    baseFontSize: effectiveBaseFontSize(settings),
     defaultFontFamily: settings.fontFamily === "sans" ? "sans-serif" : "serif",
     onProgress: stageReporter(onProgress, "parsing"),
   });

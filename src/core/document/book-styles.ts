@@ -3,12 +3,13 @@ import { textContent } from "domutils";
 
 import type { StyleResolver, StyleSheetSource } from "@/core/css/cascade";
 import { createStyleResolver } from "@/core/css/cascade";
-import type { ComputedStyle, StyleEnvironment } from "@/core/css/computed-style";
+import type { ComputedStyle, Declaration, StyleEnvironment } from "@/core/css/computed-style";
 import { rootStyle } from "@/core/css/computed-style";
 import type { ParsedStylesheet } from "@/core/css/stylesheet";
 import { parseStylesheet } from "@/core/css/stylesheet";
 import { USER_AGENT_RULES } from "@/core/css/user-agent";
-import type { EmbeddedFontFace } from "@/core/document/ast";
+import { expandBox } from "@/core/css/values";
+import type { EmbeddedFontFace, PageMargins } from "@/core/document/ast";
 import type { EpubArchive } from "@/core/epub/archive";
 import { resolveHref } from "@/core/epub/paths";
 import type { Document, Element } from "@/core/xml/dom";
@@ -31,6 +32,32 @@ export type BookStyles = {
   readonly forDocument: (document: Document, documentPath: string) => DocumentStyles;
   /** Every `@font-face` seen so far, de-duplicated. */
   readonly fontFaces: () => readonly EmbeddedFontFace[];
+  /** Page margins from `@page` rules seen so far (later rules win), if any. */
+  readonly pageMargins: () => PageMargins | undefined;
+};
+
+const PAGE_SIDES = ["top", "right", "bottom", "left"] as const;
+
+/** Applies `margin` / `margin-*` declarations from an `@page` rule onto `margins`. */
+const applyPageDeclarations = (
+  margins: PageMargins,
+  declarations: readonly Declaration[],
+): PageMargins => {
+  let next = margins;
+  for (const { property, value } of declarations) {
+    if (property === "margin") {
+      const sides = expandBox(value);
+      if (sides !== undefined) {
+        next = Object.fromEntries(PAGE_SIDES.map((side, index) => [side, sides[index]]));
+      }
+      continue;
+    }
+    const side = PAGE_SIDES.find((candidate) => property === `margin-${candidate}`);
+    if (side !== undefined) {
+      next = { ...next, [side]: value };
+    }
+  }
+  return next;
 };
 
 const MAX_IMPORT_DEPTH = 4;
@@ -50,6 +77,8 @@ export const createBookStyles = (
   const sheetCache = new Map<string, readonly LoadedSheet[]>();
   const resolverCache = new Map<string, StyleResolver>();
   const fontFaces = new Map<string, EmbeddedFontFace>();
+  const seenSheets = new Set<string>();
+  let pageMargins: PageMargins = {};
 
   const registerFontFaces = ({ sheet, basePath }: LoadedSheet): void => {
     for (const face of sheet.fontFaces) {
@@ -104,7 +133,11 @@ export const createBookStyles = (
     forDocument: (document, documentPath) => {
       const sheets = sheetsOf(document, documentPath);
       for (const sheet of sheets) {
-        registerFontFaces(sheet);
+        if (!seenSheets.has(sheet.key)) {
+          seenSheets.add(sheet.key);
+          registerFontFaces(sheet);
+          pageMargins = applyPageDeclarations(pageMargins, sheet.sheet.pageDeclarations);
+        }
       }
       const key = sheets.map((sheet) => sheet.key).join("\u0000");
       let resolve = resolverCache.get(key);
@@ -130,5 +163,6 @@ export const createBookStyles = (
       };
     },
     fontFaces: () => [...fontFaces.values()],
+    pageMargins: () => (Object.keys(pageMargins).length === 0 ? undefined : pageMargins),
   };
 };

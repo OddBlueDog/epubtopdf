@@ -16,6 +16,7 @@ import type { EmbeddedImage, OutlineMarker, RenderContext } from "@/core/pdf/ren
 import { destinationMarker, outlineMarkersFor, renderBlocks } from "@/core/pdf/render-blocks";
 import { buildStyles, MUTED_COLOR } from "@/core/pdf/styles";
 import type { ConversionSettings } from "@/core/settings";
+import { effectiveBaseFontSize } from "@/core/settings";
 
 export type DefinitionInput = {
   readonly book: BookDocument;
@@ -143,8 +144,8 @@ export const buildDocumentDefinition = ({
   fallbackTitle,
   fonts,
 }: DefinitionInput): TDocumentDefinitions => {
-  const geometry = pageGeometry(settings);
-  const base = settings.fontSizePt;
+  const geometry = pageGeometry(settings, book.pageMargins);
+  const base = effectiveBaseFontSize(settings);
   const context: RenderContext = {
     mode: settings.layout,
     baseFontSize: base,

@@ -8,6 +8,9 @@ const POINTS_PER_INCH = 72;
 
 export const mmToPoints = (mm: number): number => (mm / MM_PER_INCH) * POINTS_PER_INCH;
 
+/** CSS `medium` (16px) in points: the size a book's text is designed against, i.e. 100%. */
+export const CSS_MEDIUM_PT = 12;
+
 export type PageSize = {
   readonly label: string;
   readonly description: string;
@@ -100,7 +103,11 @@ export const LINE_HEIGHT_RANGE = { min: 1, max: 2, step: 0.05 } as const satisfi
 export type ConversionSettings = {
   readonly layout: LayoutModeId;
   readonly pageSize: PageSizeId;
+  /** Publisher layout: replace the book's page margins with `marginMm`. */
+  readonly overrideMargins: boolean;
   readonly marginMm: number;
+  /** Publisher layout: rescale the book's text so CSS `medium` becomes `fontSizePt`. */
+  readonly overrideTextSize: boolean;
   readonly fontFamily: FontFamilyId;
   readonly fontSizePt: number;
   readonly lineHeight: number;
@@ -116,7 +123,9 @@ export type ConversionSettings = {
 export const DEFAULT_SETTINGS: ConversionSettings = {
   layout: "publisher",
   pageSize: "a4",
+  overrideMargins: false,
   marginMm: 18,
+  overrideTextSize: false,
   fontFamily: "serif",
   fontSizePt: 11,
   lineHeight: 1.4,
@@ -158,7 +167,9 @@ export const parseSettings = (input: unknown): ConversionSettings => {
   return {
     layout: pick(LAYOUT_MODES, source["layout"], defaults.layout),
     pageSize: pick(PAGE_SIZES, source["pageSize"], defaults.pageSize),
+    overrideMargins: booleanOr(source["overrideMargins"], defaults.overrideMargins),
     marginMm: clampToRange(source["marginMm"], MARGIN_RANGE, defaults.marginMm),
+    overrideTextSize: booleanOr(source["overrideTextSize"], defaults.overrideTextSize),
     fontFamily: pick(FONT_FAMILIES, source["fontFamily"], defaults.fontFamily),
     fontSizePt: clampToRange(source["fontSizePt"], FONT_SIZE_RANGE, defaults.fontSizePt),
     lineHeight: clampToRange(source["lineHeight"], LINE_HEIGHT_RANGE, defaults.lineHeight),
@@ -175,3 +186,17 @@ export const parseSettings = (input: unknown): ConversionSettings => {
 /** Stable fingerprint, used to detect results produced with outdated settings. */
 export const settingsKey = (settings: ConversionSettings): string =>
   JSON.stringify(parseSettings(settings));
+
+/**
+ * The base text size in points. Publisher layout keeps the book's own sizes (CSS `medium`)
+ * unless the user opts into adjusting them; custom layout always uses the chosen size.
+ */
+export const effectiveBaseFontSize = (
+  settings: Pick<ConversionSettings, "layout" | "overrideTextSize" | "fontSizePt">,
+): number =>
+  settings.layout === "custom" || settings.overrideTextSize ? settings.fontSizePt : CSS_MEDIUM_PT;
+
+/** Whether the user's margins replace the book's own page margins. */
+export const usesCustomMargins = (
+  settings: Pick<ConversionSettings, "layout" | "overrideMargins">,
+): boolean => settings.layout === "custom" || settings.overrideMargins;

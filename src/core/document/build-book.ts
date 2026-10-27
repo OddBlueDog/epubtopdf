@@ -127,6 +127,7 @@ export const buildBookDocument = (book: EpubBook, options: BuildOptions): BookDo
       subjects: pkg.metadata.subjects,
     },
     fontFaces: styles.fontFaces(),
+    pageMargins: styles.pageMargins(),
     chapters,
     outline: outline.length > 0 ? outline : outlineFromHeadings(chapters),
     coverPath: coverPath !== undefined && archive.has(coverPath) ? coverPath : undefined,

@@ -2,7 +2,9 @@ import { fc, test } from "@fast-check/vitest";
 import { describe, expect, it } from "vitest";
 
 import {
+  CSS_MEDIUM_PT,
   DEFAULT_SETTINGS,
+  effectiveBaseFontSize,
   FONT_FAMILIES,
   FONT_SIZE_RANGE,
   IMAGE_QUALITIES,
@@ -13,6 +15,7 @@ import {
   parseSettings,
   settingsKey,
   TEXT_ALIGNMENTS,
+  usesCustomMargins,
 } from "@/core/settings";
 
 const keysOf = (record: object): string[] => Object.keys(record);
@@ -100,5 +103,31 @@ describe("settingsKey", () => {
 describe("mmToPoints", () => {
   it("converts an inch exactly", () => {
     expect(mmToPoints(25.4)).toBeCloseTo(72);
+  });
+});
+
+describe("effective text size and margins", () => {
+  it.each([
+    [{ layout: "publisher", overrideTextSize: false, fontSizePt: 15 }, CSS_MEDIUM_PT],
+    [{ layout: "publisher", overrideTextSize: true, fontSizePt: 15 }, 15],
+    [{ layout: "custom", overrideTextSize: false, fontSizePt: 15 }, 15],
+  ] as const)("base size for %j is %d pt", (settings, expected) => {
+    expect(effectiveBaseFontSize(settings)).toBe(expected);
+  });
+
+  it.each([
+    [{ layout: "publisher", overrideMargins: false }, false],
+    [{ layout: "publisher", overrideMargins: true }, true],
+    [{ layout: "custom", overrideMargins: false }, true],
+  ] as const)("custom margins for %j: %s", (settings, expected) => {
+    expect(usesCustomMargins(settings)).toBe(expected);
+  });
+
+  it("defaults to the book's own sizes and margins", () => {
+    expect(DEFAULT_SETTINGS).toMatchObject({
+      layout: "publisher",
+      overrideTextSize: false,
+      overrideMargins: false,
+    });
   });
 });

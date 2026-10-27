@@ -315,3 +315,23 @@ describe("publisher styles", () => {
     expect(list.items[0]?.[0]?.anchors).toEqual(["f0#item"]);
   });
 });
+
+describe("book page margins", () => {
+  it("collects @page margins in cascade order across stylesheets", () => {
+    const book = convert({
+      documents: [
+        {
+          href: "c.xhtml",
+          head: '<link rel="stylesheet" href="a.css"/><link rel="stylesheet" href="b.css"/>',
+          body: "<p>text</p>",
+        },
+      ],
+      files: { "a.css": "@page { margin: 1em 2em; }", "b.css": "@page { margin-top: 3em; }" },
+    });
+    expect(book.pageMargins).toEqual({ top: "3em", right: "2em", bottom: "1em", left: "2em" });
+  });
+
+  it("is undefined when the book sets no page margins", () => {
+    expect(convert({}).pageMargins).toBeUndefined();
+  });
+});

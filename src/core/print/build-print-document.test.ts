@@ -7,12 +7,13 @@ import {
   retargetSelectors,
   rewriteCssUrls,
 } from "@/core/print/build-print-document";
+import type { ConversionSettings } from "@/core/settings";
 import { DEFAULT_SETTINGS } from "@/core/settings";
 import { buildEpub, TINY_PNG } from "@/test/epub-builder";
 
 const resourceUrl = (path: string): string => `blob:test/${path}`;
 
-const print = (): string =>
+const print = (overrides: Partial<ConversionSettings> = {}): string =>
   buildPrintDocument(
     loadEpub(
       buildEpub({
@@ -39,7 +40,7 @@ const print = (): string =>
         },
       }),
     ),
-    { settings: { ...DEFAULT_SETTINGS, pageSize: "a5", marginMm: 12 }, resourceUrl },
+    { settings: { ...DEFAULT_SETTINGS, pageSize: "a5", marginMm: 12, ...overrides }, resourceUrl },
   );
 
 describe("buildPrintDocument", () => {
@@ -74,9 +75,16 @@ describe("buildPrintDocument", () => {
     expect(html).toContain("p > em { color: red }");
   });
 
-  it("sizes pages from the settings and escapes the title", () => {
-    expect(html).toContain("@page { size: 148mm 210mm; margin: 12mm; }");
+  it("sizes pages but keeps the book's margins and text size by default", () => {
+    expect(html).toContain("@page { size: 148mm 210mm; }");
+    expect(html).not.toContain("zoom:");
     expect(html).toContain("<title>Print &amp; &lt;Test&gt;</title>");
+  });
+
+  it("imposes margins and text scale only when the user overrides them", () => {
+    const overridden = print({ overrideMargins: true, overrideTextSize: true, fontSizePt: 15 });
+    expect(overridden).toContain("@page { size: 148mm 210mm; margin: 12mm; }");
+    expect(overridden).toContain("html { zoom: 1.2500; }");
   });
 });
 

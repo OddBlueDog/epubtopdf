@@ -2,6 +2,7 @@ import type { Style, StyleDictionary } from "pdfmake/interfaces";
 
 import type { HeadingLevel } from "@/core/document/ast";
 import type { ConversionSettings } from "@/core/settings";
+import { effectiveBaseFontSize } from "@/core/settings";
 
 export type StyleName =
   | `h${HeadingLevel}`
@@ -47,7 +48,7 @@ const heading = (level: HeadingLevel, base: number): Style => ({
 export const buildStyles = (
   settings: ConversionSettings,
 ): StyleDictionary & Record<StyleName, Style> => {
-  const base = settings.fontSizePt;
+  const base = effectiveBaseFontSize(settings);
   return {
     h1: heading(1, base),
     h2: heading(2, base),

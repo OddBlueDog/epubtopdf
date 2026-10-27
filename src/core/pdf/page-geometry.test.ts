@@ -60,3 +60,54 @@ describe("pageGeometry", () => {
     expect(top + bottom + geometry.contentHeight).toBeCloseTo(geometry.height);
   });
 });
+
+describe("book page margins", () => {
+  const a4 = { ...DEFAULT_SETTINGS, pageSize: "a4" as const, marginMm: 10, pageNumbers: false };
+  const fallback = (10 / 25.4) * 72;
+
+  it("uses the book's @page margins in publisher layout", () => {
+    const geometry = pageGeometry(a4, { top: "1in", right: "36pt", bottom: "2cm", left: "10%" });
+    const [left, top, right, bottom] = geometry.margins;
+    expect(top).toBeCloseTo(72);
+    expect(right).toBeCloseTo(36);
+    expect(bottom).toBeCloseTo((2 / 2.54) * 72);
+    expect(left).toBeCloseTo(geometry.width * 0.1);
+  });
+
+  it("falls back to the user's margin for sides the book leaves unset or invalid", () => {
+    const [left, top] = pageGeometry(a4, { top: "auto" }).margins;
+    expect(top).toBeCloseTo(fallback);
+    expect(left).toBeCloseTo(fallback);
+  });
+
+  it("ignores the book's margins when the user overrides them or uses custom layout", () => {
+    const book = { top: "1in", right: "1in", bottom: "1in", left: "1in" };
+    for (const settings of [
+      { ...a4, overrideMargins: true },
+      { ...a4, layout: "custom" as const },
+    ]) {
+      expect(pageGeometry(settings, book).margins[1]).toBeCloseTo(fallback);
+    }
+  });
+
+  it("caps absurd margins so text always has room", () => {
+    const geometry = pageGeometry(a4, { left: "500mm", right: "500mm" });
+    expect(geometry.contentWidth).toBeGreaterThan(geometry.width * 0.25);
+  });
+
+  test.prop([
+    fc.record(
+      {
+        top: fc.string(),
+        right: fc.string(),
+        bottom: fc.string(),
+        left: fc.string(),
+      },
+      { requiredKeys: [] },
+    ),
+  ])("always leaves a positive content area for any @page values", (margins) => {
+    const geometry = pageGeometry(a4, margins);
+    expect(geometry.contentWidth).toBeGreaterThan(0);
+    expect(geometry.contentHeight).toBeGreaterThan(0);
+  });
+});

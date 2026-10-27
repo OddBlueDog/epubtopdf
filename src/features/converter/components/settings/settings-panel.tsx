@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/field";
 import type { ConversionSettings } from "@/core/settings";
 import {
+  CSS_MEDIUM_PT,
   DEFAULT_SETTINGS,
   FONT_FAMILIES,
   FONT_SIZE_RANGE,
@@ -29,6 +30,7 @@ import {
   PAGE_SIZES,
   settingsKey,
   TEXT_ALIGNMENTS,
+  usesCustomMargins,
 } from "@/core/settings";
 import { PagePreview } from "@/features/converter/components/settings/page-preview";
 import {
@@ -59,6 +61,15 @@ export const SettingsPanel = ({ settings, onChange }: SettingsPanelProps) => {
   const isDefault = settingsKey(settings) === settingsKey(DEFAULT_SETTINGS);
   const publisher = settings.layout === "publisher";
 
+  const marginSlider = (
+    <SliderSetting
+      label="Margins"
+      value={settings.marginMm}
+      range={MARGIN_RANGE}
+      format={(mm) => `${mm} mm`}
+      onChange={set("marginMm")}
+    />
+  );
   const typeface = (
     <SegmentedSetting
       label="Typeface"
@@ -126,13 +137,19 @@ export const SettingsPanel = ({ settings, onChange }: SettingsPanelProps) => {
                 options={PAGE_SIZE_OPTIONS}
                 onChange={set("pageSize")}
               />
-              <SliderSetting
-                label="Margins"
-                value={settings.marginMm}
-                range={MARGIN_RANGE}
-                format={(mm) => `${mm} mm`}
-                onChange={set("marginMm")}
-              />
+              {publisher ? (
+                <SwitchSetting
+                  label="Custom margins"
+                  description={
+                    settings.overrideMargins
+                      ? "Replaces the book's page margins."
+                      : `Uses the book's own page margins (${settings.marginMm} mm if it sets none).`
+                  }
+                  checked={settings.overrideMargins}
+                  onChange={set("overrideMargins")}
+                />
+              ) : null}
+              {usesCustomMargins(settings) ? marginSlider : null}
             </FieldGroup>
           </FieldSet>
 
@@ -147,14 +164,25 @@ export const SettingsPanel = ({ settings, onChange }: SettingsPanelProps) => {
             </FieldDescription>
             {publisher ? (
               <FieldGroup>
-                <SliderSetting
-                  label="Text scale"
-                  description="Resizes the book's text proportionally."
-                  value={settings.fontSizePt}
-                  range={FONT_SIZE_RANGE}
-                  format={(pt) => `${pt} pt`}
-                  onChange={set("fontSizePt")}
+                <SwitchSetting
+                  label="Adjust text size"
+                  description={
+                    settings.overrideTextSize
+                      ? "Scales all of the book's text proportionally."
+                      : "Uses the book's own text sizes (100%)."
+                  }
+                  checked={settings.overrideTextSize}
+                  onChange={set("overrideTextSize")}
                 />
+                {settings.overrideTextSize ? (
+                  <SliderSetting
+                    label="Text scale"
+                    value={settings.fontSizePt}
+                    range={FONT_SIZE_RANGE}
+                    format={(pt) => `${Math.round((pt / CSS_MEDIUM_PT) * 100)}%`}
+                    onChange={set("fontSizePt")}
+                  />
+                ) : null}
                 <Collapsible>
                   <CollapsibleTrigger asChild>
                     <Button
