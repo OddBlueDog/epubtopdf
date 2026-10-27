@@ -4,6 +4,7 @@ export type ConversionErrorCode =
   | "missing-container"
   | "missing-package"
   | "empty-book"
+  | "drm-protected"
   | "render-failed"
   | "cancelled";
 

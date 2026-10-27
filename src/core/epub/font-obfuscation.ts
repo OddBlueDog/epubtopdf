@@ -16,6 +16,9 @@ const ALGORITHMS: Readonly<Record<string, ObfuscationAlgorithm>> = {
   "http://ns.adobe.com/pdf/enc#RC": "adobe",
 };
 
+/** Algorithm URIs that denote font obfuscation (not encryption). */
+export const FONT_OBFUSCATION_ALGORITHMS: ReadonlySet<string> = new Set(Object.keys(ALGORITHMS));
+
 export const OBFUSCATED_LENGTH: Readonly<Record<ObfuscationAlgorithm, number>> = {
   idpf: 1040,
   adobe: 1024,

@@ -3,6 +3,7 @@ import {
   CheckCircle2Icon,
   ClockIcon,
   LoaderCircleIcon,
+  LockIcon,
   RefreshCwIcon,
 } from "lucide-react";
 
@@ -47,7 +48,12 @@ export const JobStatusBadge = ({
         </Badge>
       );
     case "failed":
-      return (
+      return status.code === "drm-protected" ? (
+        <Badge variant="outline">
+          <LockIcon />
+          DRM-protected
+        </Badge>
+      ) : (
         <Badge variant="destructive">
           <AlertCircleIcon />
           Failed

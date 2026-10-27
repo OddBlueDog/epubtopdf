@@ -53,6 +53,7 @@ const settle = async (
     }
     report({
       kind: "failed",
+      code: error instanceof ConversionError ? error.code : "render-failed",
       message: error instanceof Error ? error.message : "Conversion failed.",
     });
   }

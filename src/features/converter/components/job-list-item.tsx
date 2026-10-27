@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { JobStatusBadge, JobStatusDetail } from "@/features/converter/components/job-status";
 import { downloadBlob, openBlob, pdfFileName } from "@/features/converter/lib/files";
 import type { ConversionJob, JobId } from "@/features/converter/model/job";
+import { isPermanentFailure } from "@/features/converter/model/job";
 
 type JobListItemProps = {
   readonly job: ConversionJob;
@@ -99,7 +100,7 @@ export const JobListItem = memo(
               </Button>
             </>
           ) : null}
-          {status.kind === "failed" || outdated ? (
+          {(status.kind === "failed" && !isPermanentFailure(status)) || outdated ? (
             <IconAction
               label={outdated ? "Convert again with current settings" : "Retry"}
               onClick={() => {

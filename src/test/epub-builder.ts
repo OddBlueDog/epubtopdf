@@ -25,6 +25,8 @@ export type FixtureOptions = {
   readonly files?: Readonly<Record<string, string | Uint8Array>>;
   /** Path (relative to `OEBPS/`) of an image in `files` to declare as the cover. */
   readonly coverImage?: string;
+  /** Files at the archive root, e.g. `META-INF/encryption.xml`. */
+  readonly rootFiles?: Readonly<Record<string, string | Uint8Array>>;
 };
 
 /** A valid, opaque 3×2 RGB PNG — embeddable without decoding. */
@@ -75,6 +77,7 @@ export const buildEpub = ({
   navLinear = false,
   files = {},
   coverImage,
+  rootFiles = {},
 }: FixtureOptions = {}): Uint8Array => {
   const manifest = [
     ...documents.map(
@@ -122,6 +125,9 @@ export const buildEpub = ({
   }
   for (const [href, content] of Object.entries(files)) {
     entries[`OEBPS/${href}`] = typeof content === "string" ? strToU8(content) : content;
+  }
+  for (const [path, content] of Object.entries(rootFiles)) {
+    entries[path] = typeof content === "string" ? strToU8(content) : content;
   }
   if (navList !== undefined) {
     entries["OEBPS/nav.xhtml"] = strToU8(xhtml(`<nav epub:type="toc"><ol>${navList}</ol></nav>`));

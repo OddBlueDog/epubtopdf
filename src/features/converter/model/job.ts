@@ -1,4 +1,5 @@
 import type { ConversionStage } from "@/core/convert";
+import type { ConversionErrorCode } from "@/core/errors";
 import type { ConversionSettings } from "@/core/settings";
 
 export type JobId = string;
@@ -20,7 +21,11 @@ export type JobStatus =
       readonly authors: readonly string[];
       readonly durationMs: number;
     }
-  | { readonly kind: "failed"; readonly message: string };
+  | {
+      readonly kind: "failed";
+      readonly code: ConversionErrorCode;
+      readonly message: string;
+    };
 
 export type ConversionJob = {
   readonly id: JobId;
@@ -44,3 +49,8 @@ export const STAGE_LABELS: Readonly<Record<ConversionStage, string>> = {
   images: "Optimising images",
   rendering: "Typesetting PDF",
 };
+
+/** Failures that converting again cannot fix. */
+export const isPermanentFailure = (status: JobStatus): boolean =>
+  status.kind === "failed" &&
+  (status.code === "drm-protected" || status.code === "invalid-archive");
